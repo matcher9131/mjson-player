@@ -1,14 +1,10 @@
 import { atomFamily } from "recoil";
-import { TileState } from "./types";
+import { TileState, TileStateIdentifier } from "./types";
 
-export const tileStateAtom = atomFamily<TileState, number>({
+export const tileStateAtom = atomFamily<TileState, TileStateIdentifier>({
     key: "tileStateAtoms",
-    default: (tileId: number) => ({
-        tileId,
-        x: 0,
-        y: 0,
-        rotate: 0,
-        isHidden: false,
-        isFacedown: false,
-    }),
+    default: () => {
+        throw new Error("Not implemented");
+        return {};
+    },
 });
