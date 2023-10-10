@@ -5,6 +5,6 @@ export const tileStateAtom = atomFamily<TileState, TileStateIdentifier>({
     key: "tileStateAtoms",
     default: () => {
         throw new Error("Not implemented");
-        return {};
+        return {} as TileState;
     },
 });

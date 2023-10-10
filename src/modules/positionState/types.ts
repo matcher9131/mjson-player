@@ -1,4 +1,6 @@
+export type GameIndex = number | "pre" | "post";
+
 export type PositionState = {
-    readonly gameIndex: number | "pre" | "post";
+    readonly gameIndex: GameIndex;
     readonly positionIndex: number;
 };
