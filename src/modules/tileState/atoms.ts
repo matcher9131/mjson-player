@@ -1,10 +1,8 @@
-import { atomFamily } from "recoil";
-import { TileState, TileStateIdentifier } from "./types";
+import { atom } from "recoil";
+import { TileState } from "./types";
 
-export const tileStateAtom = atomFamily<TileState, TileStateIdentifier>({
+// atom[gameIndex][positionIndex][tileId]
+export const tileStateAtom = atom<readonly (readonly Map<number, TileState>[])[]>({
     key: "tileStateAtoms",
-    default: () => {
-        throw new Error("Not implemented");
-        return {} as TileState;
-    },
+    default: [], // NOT IMPLEMENTED
 });
