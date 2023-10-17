@@ -1,7 +1,7 @@
-import { drawGapX, drawGapY, meldGapX, regularTileY, tileHeight, tileWidth } from "../consts";
+import { drawGapX, drawGapY, meldGapX, regularTileY, rotatedTileY, tileHeight, tileWidth } from "../consts";
 import { MJson } from "../modules/mJson/types/mJson";
 import { TileState, TileStateAtomType } from "../modules/tileState/types";
-import { insertTo, lowerBound, removeFrom } from "./arrayExtensions";
+import { insertTo, removeFrom } from "./arrayExtensions";
 
 type Meld = {
     readonly tiles: {
@@ -39,29 +39,58 @@ function getDrawX(side: Side): number {
 // 'map'に全ての牌のTileStateを書き込む
 function getAllTilesState(sides: readonly Side[], map: Map<number, TileState>) {
     for (let sideIndex = 0; sideIndex < sides.length; ++sideIndex) {
-        const sideWidth = getSideWidth(sides[sideIndex]);
-        for (let j = 0; j < sides[sideIndex].unrevealed.length; ++j) {
-            map.set(sides[sideIndex].unrevealed[j], {
+        const side = sides[sideIndex];
+        const sideWidth = getSideWidth(side);
+        for (let j = 0; j < side.unrevealed.length; ++j) {
+            map.set(side.unrevealed[j], {
                 x: j * tileWidth + tileWidth / 2 - sideWidth / 2,
                 y: regularTileY,
                 sideIndex,
             });
         }
 
-        const drawTile = sides[sideIndex].drawTile;
+        const drawTile = side.drawTile;
         if (drawTile != null) {
             map.set(drawTile, {
-                x: getDrawX(sides[sideIndex]),
+                x: getDrawX(side),
                 y: regularTileY,
                 sideIndex,
             });
         }
 
-        // NOT IMPLEMENTED: 鳴き牌
+        let tileLeft = sideWidth + meldGapX;
+        for (let meldIndex = 0; meldIndex < side.melds.length; ++meldIndex) {
+            const meld = side.melds[meldIndex];
+            for (let j = 0; j < meld.tiles.length; ++j) {
+                if (j === meld.rotatedIndex) {
+                    map.set(meld.tiles[j].tileId, {
+                        x: tileLeft + tileHeight / 2,
+                        y: rotatedTileY,
+                        sideIndex,
+                    });
+                    if (meld.addedTileId) {
+                        map.set(meld.addedTileId, {
+                            x: tileLeft + tileHeight / 2,
+                            y: rotatedTileY - tileWidth,
+                            sideIndex,
+                        });
+                    }
+                    tileLeft += tileHeight;
+                } else {
+                    map.set(meld.tiles[j].tileId, {
+                        x: tileLeft + tileWidth / 2,
+                        y: regularTileY,
+                        sideIndex,
+                    });
+                    tileLeft += tileWidth;
+                }
+            }
+            tileLeft += meldGapX;
+        }
     }
 }
 
-const createTileStates = (mJson: MJson): TileStateAtomType => {
+export const createTileStates = (mJson: MJson): TileStateAtomType => {
     return mJson.games.map((game) => {
         const sides = game.dealtTiles.map(
             (dealt): Side => ({
@@ -209,5 +238,6 @@ const createTileStates = (mJson: MJson): TileStateAtomType => {
             map[positionIndex] = new Map();
             getAllTilesState(sides, map[positionIndex]);
         }
+        return map;
     });
 };
