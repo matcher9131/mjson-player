@@ -2,7 +2,10 @@ import { useRecoilValue } from "recoil";
 import { tileStateSelector } from "../modules/tileState/selectors";
 import TilePresenter from "./TilePresenter";
 
-const TileContainer = (tileId: number) => {
+type TileConatinerProps = {
+    readonly tileId: number;
+};
+const TileContainer = ({ tileId }: TileConatinerProps) => {
     const tileState = useRecoilValue(tileStateSelector(tileId));
     const svgTileId = tileState.isFacedown
         ? "tile_facedown"
