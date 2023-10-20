@@ -1,4 +1,14 @@
-import { drawGapX, drawGapY, meldGapX, regularTileY, rotatedTileY, tileHeight, tileWidth } from "../consts";
+import {
+    discardsOffsetX,
+    discardsOffsetY,
+    drawGapX,
+    drawGapY,
+    meldGapX,
+    regularTileY,
+    rotatedTileY,
+    tileHeight,
+    tileWidth,
+} from "../consts";
 import { MJson } from "../modules/mJson/types/mJson";
 import { TileState, TileStateAtomType } from "../modules/tileState/types";
 import { insertTo, removeFrom } from "./arrayExtensions";
@@ -36,9 +46,28 @@ function getDrawX(side: Side): number {
     return side.unrevealed.length * tileWidth + drawGapX + tileWidth / 2 - getSideWidth(side) / 2;
 }
 
+// 'map'に捨て牌のTileStateを書き込む
+function setDiscardsTilesState(side: Side, sideIndex: number, map: Map<number, TileState>) {
+    const riichiRow = side.riichiIndex != null ? Math.floor(side.riichiIndex / 6) : -1;
+    const riichiColumn = side.riichiIndex != null ? side.riichiIndex % 6 : -1;
+    const adjustment = (i: number, j: number): number =>
+        i == riichiRow && j >= riichiColumn ? tileHeight / 2 - tileWidth / 2 : 0;
+    for (let discardIndex = 0; discardIndex < side.discards.length; ++discardIndex) {
+        const i = Math.floor(discardIndex / 6);
+        const j = discardIndex % 6;
+        map.set(side.discards[discardIndex], {
+            x: discardsOffsetX + j * tileWidth + tileWidth / 2 + adjustment(i, j),
+            y: discardsOffsetY + i * tileHeight + tileHeight / 2,
+            sideIndex,
+            isRotated: discardIndex == side.riichiIndex,
+        });
+    }
+}
+
 // 'map'に全ての牌のTileStateを書き込む
-function getAllTilesState(sides: readonly Side[], map: Map<number, TileState>) {
+function setAllTilesState(sides: readonly Side[], map: Map<number, TileState>) {
     for (let sideIndex = 0; sideIndex < sides.length; ++sideIndex) {
+        // 手牌（ツモ牌以外）
         const side = sides[sideIndex];
         const sideWidth = getSideWidth(side);
         for (let j = 0; j < side.unrevealed.length; ++j) {
@@ -49,6 +78,7 @@ function getAllTilesState(sides: readonly Side[], map: Map<number, TileState>) {
             });
         }
 
+        // ツモ牌
         const drawTile = side.drawTile;
         if (drawTile != null) {
             map.set(drawTile, {
@@ -58,6 +88,10 @@ function getAllTilesState(sides: readonly Side[], map: Map<number, TileState>) {
             });
         }
 
+        // 捨て牌
+        setDiscardsTilesState(side, sideIndex, map);
+
+        // 鳴き牌
         let tileLeft = sideWidth + meldGapX;
         for (let meldIndex = 0; meldIndex < side.melds.length; ++meldIndex) {
             const meld = side.melds[meldIndex];
@@ -104,7 +138,7 @@ export const createTileStates = (mJson: MJson): TileStateAtomType => {
 
         // 配牌
         map[0] = new Map();
-        getAllTilesState(sides, map[0]);
+        setAllTilesState(sides, map[0]);
         let positionIndex = 0;
 
         for (const event of game.events) {
@@ -236,7 +270,7 @@ export const createTileStates = (mJson: MJson): TileStateAtomType => {
             }
             // 全ての牌の位置を記録
             map[positionIndex] = new Map();
-            getAllTilesState(sides, map[positionIndex]);
+            setAllTilesState(sides, map[positionIndex]);
         }
         return map;
     });
