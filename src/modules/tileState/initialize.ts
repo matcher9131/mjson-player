@@ -8,10 +8,10 @@ import {
     rotatedTileY,
     tileHeight,
     tileWidth,
-} from "../consts";
-import { MJson } from "../modules/mJson/types/mJson";
-import { TileState, TileStateAtomType } from "../modules/tileState/types";
-import { insertTo, removeFrom } from "./arrayExtensions";
+} from "../../consts";
+import { MJson } from "../../types/mJson/mJson";
+import { TileState, TileStateAtomType } from "./types";
+import { insertTo, removeFrom } from "../../util/arrayExtensions";
 
 type Meld = {
     readonly tiles: {
@@ -30,34 +30,43 @@ type Side = {
     riichiIndex?: number;
 };
 
+function getUnrevealedWidth(side: Side): number {
+    // unrevealed.length = 13 or 14 => 14 * tileWidth + drawGapX
+    // unrevealed.length = 10 or 11 => 11 * tileWidth + drawGapX
+    return (Math.floor((side.unrevealed.length + 2) / 3) * 3 - 1) * tileWidth + drawGapX;
+}
+
 function getMeldWidth(meld: Meld): number {
     return meld.tiles.length * tileWidth + (meld.rotatedIndex != null ? tileHeight - tileWidth : 0);
 }
 
 function getSideWidth(side: Side): number {
-    // unrevealed.length = 13 or 14 => 14 * tileWidth + drawGapX
-    // unrevealed.length = 10 or 11 => 11 * tileWidth + drawGapX
-    const unrevealedWidth = (Math.floor((side.unrevealed.length + 2) / 3) * 3 - 1) * tileWidth + drawGapX;
+    const unrevealedWidth = getUnrevealedWidth(side);
     const meldsWidth = side.melds.reduce((sum, meld) => sum + meldGapX + getMeldWidth(meld), 0);
     return unrevealedWidth + meldsWidth;
 }
 
 function getDrawX(side: Side): number {
-    return side.unrevealed.length * tileWidth + drawGapX + tileWidth / 2 - getSideWidth(side) / 2;
+    return getUnrevealedWidth(side) - tileWidth / 2 - getSideWidth(side) / 2;
 }
 
 // 'map'に捨て牌のTileStateを書き込む
 function setDiscardsTilesState(side: Side, sideIndex: number, map: Map<number, TileState>) {
-    const riichiRow = side.riichiIndex != null ? Math.floor(side.riichiIndex / 6) : -1;
-    const riichiColumn = side.riichiIndex != null ? side.riichiIndex % 6 : -1;
-    const adjustment = (i: number, j: number): number =>
-        i == riichiRow && j >= riichiColumn ? tileHeight / 2 - tileWidth / 2 : 0;
+    const riichiRow = side.riichiIndex != null ? Math.min(2, Math.floor(side.riichiIndex / 6)) : -1;
+    const riichiColumn = side.riichiIndex != null ? side.riichiIndex - 6 * riichiRow : -1;
+    const adjustment = (i: number, j: number): number => {
+        if (i == riichiRow) {
+            if (j == riichiColumn) return tileHeight / 2 - tileWidth / 2;
+            else if (j > riichiColumn) return tileHeight - tileWidth;
+        }
+        return 0;
+    };
     for (let discardIndex = 0; discardIndex < side.discards.length; ++discardIndex) {
-        const i = Math.floor(discardIndex / 6);
-        const j = discardIndex % 6;
+        const i = Math.min(2, Math.floor(discardIndex / 6));
+        const j = discardIndex - 6 * i;
         map.set(side.discards[discardIndex], {
-            x: discardsOffsetX + j * tileWidth + tileWidth / 2 + adjustment(i, j),
-            y: discardsOffsetY + i * tileHeight + tileHeight / 2,
+            x: discardsOffsetX + j * tileWidth + adjustment(i, j),
+            y: discardsOffsetY + i * tileHeight,
             sideIndex,
             isRotated: discardIndex == side.riichiIndex,
         });
@@ -67,8 +76,8 @@ function setDiscardsTilesState(side: Side, sideIndex: number, map: Map<number, T
 // 'map'に全ての牌のTileStateを書き込む
 function setAllTilesState(sides: readonly Side[], map: Map<number, TileState>) {
     for (let sideIndex = 0; sideIndex < sides.length; ++sideIndex) {
-        // 手牌（ツモ牌以外）
         const side = sides[sideIndex];
+        // 手牌（ツモ牌以外）
         const sideWidth = getSideWidth(side);
         for (let j = 0; j < side.unrevealed.length; ++j) {
             map.set(side.unrevealed[j], {
@@ -92,7 +101,7 @@ function setAllTilesState(sides: readonly Side[], map: Map<number, TileState>) {
         setDiscardsTilesState(side, sideIndex, map);
 
         // 鳴き牌
-        let tileLeft = sideWidth + meldGapX;
+        let tileLeft = getUnrevealedWidth(side) + meldGapX - sideWidth / 2;
         for (let meldIndex = 0; meldIndex < side.melds.length; ++meldIndex) {
             const meld = side.melds[meldIndex];
             for (let j = 0; j < meld.tiles.length; ++j) {
@@ -101,6 +110,7 @@ function setAllTilesState(sides: readonly Side[], map: Map<number, TileState>) {
                         x: tileLeft + tileHeight / 2,
                         y: rotatedTileY,
                         sideIndex,
+                        isRotated: true,
                     });
                     if (meld.addedTileId) {
                         map.set(meld.addedTileId, {
@@ -165,6 +175,8 @@ export const createTileStates = (mJson: MJson): TileStateAtomType => {
                         insertTo(side.unrevealed, side.drawTile!);
                         removeFrom(side.unrevealed, tileId);
                         side.drawTile = undefined;
+                        side.discards.push(event.t);
+                        if (event.isRiichi) side.riichiIndex = side.discards.length - 1;
                     }
                     break;
                 case "c": // チー
@@ -185,6 +197,7 @@ export const createTileStates = (mJson: MJson): TileStateAtomType => {
                 case "p": // ポン
                     {
                         const sideFrom = sides.findIndex((s) => s.discards.includes(event.t));
+                        if (sideFrom < 0) throw new Error(`Assertion: 'sideFrom' >= 0, actual: ${sideFrom}`);
                         for (const t of event.tiles) {
                             removeFrom(side.unrevealed, t);
                         }
