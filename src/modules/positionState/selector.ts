@@ -69,7 +69,7 @@ export const previousPositionStateSelector = selector<PositionState>({
 });
 
 export const nextGamePositionStateSelector = selector<PositionState>({
-    key: "nextPositionStateSelector",
+    key: "nextGamePositionStateSelector",
     get: ({ get }) => {
         const positionState = get(positionStateAtom);
         const { gameIndex } = positionState;
