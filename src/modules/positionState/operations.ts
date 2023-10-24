@@ -9,7 +9,7 @@ import { positionStateAtom } from "./atoms";
 
 export const useGoToNextPosition = () => {
     const newPositionState = useRecoilValue(nextPositionStateSelector);
-    useRecoilCallback(
+    return useRecoilCallback(
         ({ set }) =>
             () => {
                 set(positionStateAtom, newPositionState);
@@ -20,7 +20,7 @@ export const useGoToNextPosition = () => {
 
 export const useGoToPreviousPosition = () => {
     const newPositionState = useRecoilValue(previousPositionStateSelector);
-    useRecoilCallback(
+    return useRecoilCallback(
         ({ set }) =>
             () => {
                 set(positionStateAtom, newPositionState);
@@ -31,7 +31,7 @@ export const useGoToPreviousPosition = () => {
 
 export const useGoToNextGame = () => {
     const newPositionState = useRecoilValue(nextGamePositionStateSelector);
-    useRecoilCallback(
+    return useRecoilCallback(
         ({ set }) =>
             () => {
                 set(positionStateAtom, newPositionState);
@@ -42,7 +42,7 @@ export const useGoToNextGame = () => {
 
 export const useGoToPreviousGame = () => {
     const newPositionState = useRecoilValue(previousGamePositionStateSelector);
-    useRecoilCallback(
+    return useRecoilCallback(
         ({ set }) =>
             () => {
                 set(positionStateAtom, newPositionState);
