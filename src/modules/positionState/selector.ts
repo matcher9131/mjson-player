@@ -1,7 +1,8 @@
 import { selector, selectorFamily } from "recoil";
 import { GameIndex, PositionState } from "./types";
-import { numGamesAtom, positionLengthAtom, positionStateAtom } from "./atoms";
+import { positionStateAtom } from "./atoms";
 import { getNextGameIndex, getPreviousGameIndex } from "./util";
+import { mJsonSelector } from "../mJson/selectors";
 
 export const positionStateSelector = selector<PositionState>({
     key: "positionStateSelector",
@@ -13,12 +14,12 @@ export const positionLengthSelector = selectorFamily<number, GameIndex>({
     get:
         (gameIndex: GameIndex) =>
         ({ get }) =>
-            get(positionLengthAtom(gameIndex)),
+            gameIndex == "pre" || gameIndex == "post" ? 1 : get(mJsonSelector).games[gameIndex].events.length,
 });
 
 export const numGamesSelector = selector<number>({
     key: "numGamesSelector",
-    get: ({ get }) => get(numGamesAtom),
+    get: ({ get }) => get(mJsonSelector).games.length,
 });
 
 export const nextPositionStateSelector = selector<PositionState>({
@@ -26,7 +27,7 @@ export const nextPositionStateSelector = selector<PositionState>({
     get: ({ get }) => {
         const positionState = get(positionStateAtom);
         const { gameIndex, positionIndex } = positionState;
-        const numGames = get(numGamesAtom);
+        const numGames = get(numGamesSelector);
         const nextGameIndex = getNextGameIndex(gameIndex, numGames);
         const positionLength = get(positionLengthSelector(gameIndex));
 
@@ -49,7 +50,7 @@ export const previousPositionStateSelector = selector<PositionState>({
     get: ({ get }) => {
         const positionState = get(positionStateAtom);
         const { gameIndex, positionIndex } = positionState;
-        const numGames = get(numGamesAtom);
+        const numGames = get(numGamesSelector);
         const previousGameIndex = getPreviousGameIndex(gameIndex, numGames);
         const previousPositionLength = get(positionLengthSelector(previousGameIndex));
 
@@ -72,7 +73,7 @@ export const nextGamePositionStateSelector = selector<PositionState>({
     get: ({ get }) => {
         const positionState = get(positionStateAtom);
         const { gameIndex } = positionState;
-        const numGames = get(numGamesAtom);
+        const numGames = get(numGamesSelector);
         const nextGameIndex = getNextGameIndex(gameIndex, numGames);
         return {
             gameIndex: nextGameIndex,
@@ -86,7 +87,7 @@ export const previousGamePositionStateSelector = selector<PositionState>({
     get: ({ get }) => {
         const positionState = get(positionStateAtom);
         const { gameIndex } = positionState;
-        const numGames = get(numGamesAtom);
+        const numGames = get(numGamesSelector);
         const previousGameIndex = getPreviousGameIndex(gameIndex, numGames);
         return {
             gameIndex: previousGameIndex,

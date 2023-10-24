@@ -1,5 +1,5 @@
-import { atom, atomFamily } from "recoil";
-import { GameIndex, PositionState } from "./types";
+import { atom } from "recoil";
+import { PositionState } from "./types";
 
 export const positionStateAtom = atom<PositionState>({
     key: "positionStateAtom",
@@ -7,15 +7,4 @@ export const positionStateAtom = atom<PositionState>({
         gameIndex: "pre",
         positionIndex: 0,
     },
-});
-
-export const positionLengthAtom = atomFamily<number, GameIndex>({
-    key: "positionLengthAtom",
-    default: () => 0, // NOT IMPLEMENTED
-    // gameIndexが"pre", "post"に対するpositionLengthは1にすること！
-});
-
-export const numGamesAtom = atom<number>({
-    key: "numGamesAtom",
-    default: 0, // NOT IMPLEMENTED
 });
