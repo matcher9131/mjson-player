@@ -10,7 +10,7 @@ type TilePresenterProps = {
 const TilePresenter = ({ tileId, x, y, tileRotate, sideRotate, opacity }: TilePresenterProps) => {
     return (
         <use
-            xlinkHref={tileId}
+            xlinkHref={`#${tileId}`}
             transform={`rotate(${sideRotate}) translate(${x} ${y}) rotate(${tileRotate})`}
             opacity={opacity}
         />
