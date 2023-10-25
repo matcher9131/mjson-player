@@ -1,14 +1,7 @@
 import { selectorFamily } from "recoil";
-import { TileState } from "./types";
+import { TileState, defaultTileState } from "./types";
 import { tileStateAtom } from "./atoms";
 import { positionStateSelector } from "../positionState/selector";
-
-const defaultTileState: TileState = {
-    x: 0,
-    y: 0,
-    sideIndex: 0,
-    isInvisible: true,
-};
 
 // tileIdを指定してTileStateを得る（positionStateを参照して適切な局面のものを返す）
 export const tileStateSelector = selectorFamily<TileState, number>({
