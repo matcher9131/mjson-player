@@ -4,7 +4,7 @@ import {
     nextPositionStateSelector,
     previousGamePositionStateSelector,
     previousPositionStateSelector,
-} from "./selector";
+} from "./selectors";
 import { positionStateAtom } from "./atoms";
 
 export const useGoToNextPosition = () => {

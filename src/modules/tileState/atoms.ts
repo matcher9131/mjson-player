@@ -1,18 +1,7 @@
-import { atom } from "recoil";
-import { TileStateAtomType } from "./types";
-import { mJsonSelector } from "../mJson/selectors";
-import { createTileStates } from "./initialize";
+import { atomFamily } from "recoil";
+import { TileState, getDefaultTileState } from "./types";
 
-// atom[gameIndex][positionIndex][tileId]
-export const tileStateAtom = atom<TileStateAtomType>({
+export const tileStateAtom = atomFamily<TileState, number>({
     key: "tileStateAtoms",
-    default: [],
-    effects: [
-        ({ setSelf, trigger, getLoadable }) => {
-            if (trigger == "get") {
-                const mJson = getLoadable(mJsonSelector).getValue();
-                setSelf(createTileStates(mJson));
-            }
-        },
-    ],
+    default: () => getDefaultTileState(),
 });

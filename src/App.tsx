@@ -8,7 +8,7 @@ function App() {
     return (
         <RecoilRoot>
             <Suspense fallback={<div>Loading...</div>}>
-                <div className="flex">
+                <div>
                     <BoardContainer />
                     <ControlPanelContainer />
                 </div>

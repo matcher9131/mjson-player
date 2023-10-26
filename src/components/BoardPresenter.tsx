@@ -9,7 +9,7 @@ const BoardPresenter = () => {
             width={500}
             height={500}
             viewBox={`${-boardOneSize / 2} ${-boardOneSize / 2} ${boardOneSize} ${boardOneSize}`}
-            style={{ backfaceVisibility: "hidden" }}
+            style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
         >
             {new Array(136).fill(0).map((_, i) => (
                 <TileContainer key={i} tileId={i} />

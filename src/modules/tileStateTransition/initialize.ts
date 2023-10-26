@@ -10,8 +10,9 @@ import {
     tileWidth,
 } from "../../consts";
 import { MJson } from "../../types/mJson/mJson";
-import { TileState, TileStateAtomType, defaultTileState } from "./types";
+import { TileState, getDefaultTileState } from "../tileState/types";
 import { insertTo, removeFrom } from "../../util/arrayExtensions";
+import { TileStateTransition } from "./types";
 
 type Meld = {
     readonly tiles: {
@@ -50,7 +51,7 @@ function getDrawX(side: Side): number {
     return getUnrevealedWidth(side) - tileWidth / 2 - getSideWidth(side) / 2;
 }
 
-function isSamePosition(state1: Omit<TileState, "transits">, state2: Omit<TileState, "transits">): boolean {
+function isSameState(state1: TileState, state2: TileState): boolean {
     return (
         state1.x === state2.x &&
         state1.y === state2.y &&
@@ -60,30 +61,8 @@ function isSamePosition(state1: Omit<TileState, "transits">, state2: Omit<TileSt
     );
 }
 
-function setTileState(
-    map: Map<number, TileState>,
-    prevMap: Map<number, TileState> | null,
-    tileId: number,
-    newState: Omit<TileState, "transits">
-) {
-    const prevState = prevMap?.get(tileId) ?? defaultTileState;
-    //
-    // if (tileId === 108) {
-    //     console.log(
-    //         `prev: (x, y) = (${prevState.x}, ${prevState.y}), current: (x, y) = (${newState.x}, ${newState.y})`
-    //     );
-    // }
-    //
-    map.set(tileId, { ...newState, transits: !isSamePosition(prevState, newState) });
-}
-
-// 'map'に捨て牌のTileStateを書き込む
-function setDiscardsTilesState(
-    map: Map<number, TileState>,
-    prevMap: Map<number, TileState> | null,
-    side: Side,
-    sideIndex: number
-): void {
+// 'states'に捨て牌のTileStateを書き込む
+function setDiscardsTilesState(states: TileState[], side: Side, sideIndex: number): void {
     const riichiRow = side.riichiIndex != null ? Math.min(2, Math.floor(side.riichiIndex / 6)) : -1;
     const riichiColumn = side.riichiIndex != null ? side.riichiIndex - 6 * riichiRow : -1;
     const adjustment = (i: number, j: number): number => {
@@ -96,45 +75,41 @@ function setDiscardsTilesState(
     for (let discardIndex = 0; discardIndex < side.discards.length; ++discardIndex) {
         const i = Math.min(2, Math.floor(discardIndex / 6));
         const j = discardIndex - 6 * i;
-        setTileState(map, prevMap, side.discards[discardIndex], {
+        states[side.discards[discardIndex]] = {
             x: discardsOffsetX + j * tileWidth + adjustment(i, j),
             y: discardsOffsetY + i * tileHeight,
             sideIndex,
             isRotated: discardIndex == side.riichiIndex,
-        });
+        };
     }
 }
 
-// 'map'に全ての牌のTileStateを書き込む
-function setAllTilesState(
-    map: Map<number, TileState>,
-    prevMap: Map<number, TileState> | null,
-    sides: readonly Side[]
-): void {
+function getAllTilesState(sides: readonly Side[]): TileState[] {
+    const states = new Array(136).fill(0).map(() => getDefaultTileState());
     for (let sideIndex = 0; sideIndex < sides.length; ++sideIndex) {
         const side = sides[sideIndex];
         // 手牌（ツモ牌以外）
         const sideWidth = getSideWidth(side);
         for (let j = 0; j < side.unrevealed.length; ++j) {
-            setTileState(map, prevMap, side.unrevealed[j], {
+            states[side.unrevealed[j]] = {
                 x: j * tileWidth + tileWidth / 2 - sideWidth / 2,
                 y: regularTileY,
                 sideIndex,
-            });
+            };
         }
 
         // ツモ牌
         const drawTile = side.drawTile;
         if (drawTile != null) {
-            setTileState(map, prevMap, drawTile, {
+            states[drawTile] = {
                 x: getDrawX(side),
                 y: regularTileY,
                 sideIndex,
-            });
+            };
         }
 
         // 捨て牌
-        setDiscardsTilesState(map, prevMap, side, sideIndex);
+        setDiscardsTilesState(states, side, sideIndex);
 
         // 鳴き牌
         let tileLeft = getUnrevealedWidth(side) + meldGapX - sideWidth / 2;
@@ -142,35 +117,36 @@ function setAllTilesState(
             const meld = side.melds[meldIndex];
             for (let j = 0; j < meld.tiles.length; ++j) {
                 if (j === meld.rotatedIndex) {
-                    setTileState(map, prevMap, meld.tiles[j].tileId, {
+                    states[meld.tiles[j].tileId] = {
                         x: tileLeft + tileHeight / 2,
                         y: rotatedTileY,
                         sideIndex,
                         isRotated: true,
-                    });
+                    };
                     if (meld.addedTileId) {
-                        setTileState(map, prevMap, meld.addedTileId, {
+                        states[meld.addedTileId] = {
                             x: tileLeft + tileHeight / 2,
                             y: rotatedTileY - tileWidth,
                             sideIndex,
-                        });
+                        };
                     }
                     tileLeft += tileHeight;
                 } else {
-                    setTileState(map, prevMap, meld.tiles[j].tileId, {
+                    states[meld.tiles[j].tileId] = {
                         x: tileLeft + tileWidth / 2,
                         y: regularTileY,
                         sideIndex,
-                    });
+                    };
                     tileLeft += tileWidth;
                 }
             }
             tileLeft += meldGapX;
         }
     }
+    return states;
 }
 
-export const createTileStates = (mJson: MJson): TileStateAtomType => {
+export const createTileStateTransitions = (mJson: MJson): TileStateTransition[][][] => {
     return mJson.games.map((game) => {
         const sides = game.dealtTiles.map(
             (dealt): Side => ({
@@ -179,16 +155,13 @@ export const createTileStates = (mJson: MJson): TileStateAtomType => {
                 discards: [],
             })
         );
-        // map[positionIndex][tileId]
-        const map: Map<number, TileState>[] = [];
 
-        // 配牌
-        map[0] = new Map();
-        setAllTilesState(map[0], null, sides);
-        let positionIndex = 0;
+        // states[tileId]
+        let prevStates: TileState[] = getAllTilesState(sides);
+        // transitions[positionIndex][]
+        const transitions: TileStateTransition[][] = [prevStates.map((newState, tileId) => ({ tileId, newState }))];
 
         for (const event of game.events) {
-            ++positionIndex;
             const sideIndex = event.p;
             const side = sides[sideIndex];
             switch (event.k) {
@@ -197,12 +170,14 @@ export const createTileStates = (mJson: MJson): TileStateAtomType => {
                         const tileId = event.t;
                         side.drawTile = tileId;
                         // ツモるアニメーションのために一つ前の局面にツモ牌を仕込んでおく
-                        map[positionIndex - 1].set(tileId, {
-                            x: getDrawX(side),
-                            y: regularTileY - drawGapY,
-                            sideIndex,
-                            transits: false,
-                            isInvisible: true,
+                        transitions[transitions.length - 1].push({
+                            tileId,
+                            newState: {
+                                x: getDrawX(side),
+                                y: regularTileY - drawGapY,
+                                sideIndex,
+                                isInvisible: true,
+                            },
                         });
                     }
                     break;
@@ -319,9 +294,16 @@ export const createTileStates = (mJson: MJson): TileStateAtomType => {
                     break;
             }
             // 全ての牌の位置を記録
-            map[positionIndex] = new Map();
-            setAllTilesState(map[positionIndex], positionIndex > 0 ? map[positionIndex - 1] : null, sides);
+            const newStates = getAllTilesState(sides);
+            const newTransitions: TileStateTransition[] = [];
+            for (let tileId = 0; tileId < 136; ++tileId) {
+                if (!isSameState(prevStates[tileId], newStates[tileId])) {
+                    newTransitions.push({ tileId, newState: newStates[tileId] });
+                }
+            }
+            transitions.push(newTransitions);
+            prevStates = newStates;
         }
-        return map;
+        return transitions;
     });
 };
