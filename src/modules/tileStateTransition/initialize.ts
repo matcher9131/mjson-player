@@ -159,7 +159,9 @@ export const createTileStateTransitions = (mJson: MJson): TileStateTransition[][
         // states[tileId]
         let prevStates: TileState[] = getAllTilesState(sides);
         // transitions[positionIndex][]
-        const transitions: TileStateTransition[][] = [prevStates.map((newState, tileId) => ({ tileId, newState }))];
+        const transitions: TileStateTransition[][] = [
+            prevStates.map((newState, tileId) => ({ kind: "forward", tileId, newState })),
+        ];
 
         for (const event of game.events) {
             const sideIndex = event.p;
@@ -170,15 +172,18 @@ export const createTileStateTransitions = (mJson: MJson): TileStateTransition[][
                         const tileId = event.t;
                         side.drawTile = tileId;
                         // ツモるアニメーションのために一つ前の局面にツモ牌を仕込んでおく
+                        const state = {
+                            x: getDrawX(side),
+                            y: regularTileY - drawGapY,
+                            sideIndex,
+                            isInvisible: true,
+                        };
                         transitions[transitions.length - 1].push({
+                            kind: "forward",
                             tileId,
-                            newState: {
-                                x: getDrawX(side),
-                                y: regularTileY - drawGapY,
-                                sideIndex,
-                                isInvisible: true,
-                            },
+                            newState: { ...state },
                         });
+                        prevStates[tileId] = state;
                     }
                     break;
                 case "d": // 捨て
@@ -202,7 +207,7 @@ export const createTileStateTransitions = (mJson: MJson): TileStateTransition[][
                             tiles: tiles.map((t) => ({ tileId: t })),
                             rotatedIndex,
                         });
-                        // 捨て牌からチーされた牌を消す
+                        // 捨て牌から鳴かれた牌を消す
                         sides[(sideIndex + 3) % 4].discards.pop();
                     }
                     break;
@@ -234,7 +239,7 @@ export const createTileStateTransitions = (mJson: MJson): TileStateTransition[][
                             tiles: tiles.map((t) => ({ tileId: t })),
                             rotatedIndex,
                         });
-                        // 捨て牌からチーされた牌を消す
+                        // 捨て牌から鳴かれた牌を消す
                         sides[sideFrom].discards.pop();
                     }
                     break;
@@ -278,7 +283,7 @@ export const createTileStateTransitions = (mJson: MJson): TileStateTransition[][
                             tiles: tiles.map((t) => ({ tileId: t })),
                             rotatedIndex,
                         });
-                        // 捨て牌からチーされた牌を消す
+                        // 捨て牌から鳴かれた牌を消す
                         sides[sideFrom].discards.pop();
                     }
                     break;
@@ -294,16 +299,27 @@ export const createTileStateTransitions = (mJson: MJson): TileStateTransition[][
                     break;
             }
             // 全ての牌の位置を記録
+            transitions.push([]);
             const newStates = getAllTilesState(sides);
-            const newTransitions: TileStateTransition[] = [];
             for (let tileId = 0; tileId < 136; ++tileId) {
                 if (!isSameState(prevStates[tileId], newStates[tileId])) {
-                    newTransitions.push({ tileId, newState: newStates[tileId] });
+                    transitions[transitions.length - 1].push({ kind: "forward", tileId, newState: newStates[tileId] });
+                    transitions[transitions.length - 2].push({
+                        kind: "backward",
+                        tileId,
+                        newState: prevStates[tileId],
+                    });
                 }
             }
-            transitions.push(newTransitions);
             prevStates = newStates;
         }
+        prevStates.forEach((newState, tileId) => {
+            transitions[transitions.length - 1].push({
+                kind: "backward",
+                tileId,
+                newState,
+            });
+        });
         return transitions;
     });
 };

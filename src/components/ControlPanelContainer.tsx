@@ -1,8 +1,8 @@
 import {
-    //useGoToNextGame,
+    useGoToNextGame,
     useGoToNextPosition,
-    //useGoToPreviousGame,
-    //useGoToPreviousPosition,
+    useGoToPreviousGame,
+    useGoToPreviousPosition,
 } from "../modules/positionState/operations";
 import { useUpdateTileState } from "../modules/tileState/operation";
 import ControlPanelPresenter from "./ControlPanelPresenter";
@@ -10,13 +10,25 @@ import ControlPanelPresenter from "./ControlPanelPresenter";
 const ControlPanelContainer = () => {
     const updateTileState = useUpdateTileState();
     const goToNextPosition = useGoToNextPosition();
-    const handlePreviousClicked = () => {}; // NOT IMPLEMENTED
+    const goToPreviousPosition = useGoToPreviousPosition();
+    const goToNextGame = useGoToNextGame();
+    const goToPreviousGame = useGoToPreviousGame();
+    const handlePreviousClicked = () => {
+        goToPreviousPosition();
+        updateTileState();
+    };
     const handleNextClicked = () => {
         goToNextPosition();
         updateTileState();
     };
-    const handlePreviousGameClicked = () => {}; // NOT IMPLEMENTED
-    const handleNextGameClicked = () => {}; // NOT IMPLEMENTED
+    const handlePreviousGameClicked = () => {
+        goToNextGame();
+        updateTileState();
+    };
+    const handleNextGameClicked = () => {
+        goToPreviousGame();
+        updateTileState();
+    };
     return (
         <ControlPanelPresenter
             onPreviousClicked={handlePreviousClicked}

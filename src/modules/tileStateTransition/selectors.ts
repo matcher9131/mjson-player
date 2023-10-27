@@ -8,5 +8,5 @@ export const tileStateTransitionSelector = selectorFamily<ReadonlyArray<TileStat
     get:
         ({ gameIndex, positionIndex }: PositionState) =>
         ({ get }) =>
-            gameIndex == "pre" || gameIndex == "post" ? [] : get(tileStateTransitionAtom)[gameIndex][positionIndex],
+            gameIndex === "pre" || gameIndex === "post" ? [] : get(tileStateTransitionAtom)[gameIndex][positionIndex],
 });
