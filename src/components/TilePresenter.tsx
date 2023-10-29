@@ -10,9 +10,6 @@ type TilePresenterProps = {
 };
 
 const TilePresenter = React.memo(({ tileId, x, y, tileRotate, sideRotate, opacity }: TilePresenterProps) => {
-    //
-    if (tileId === "tile27") console.log("rerendered tileId = 'tile27'");
-    //
     return (
         <use
             xlinkHref={`#${tileId}`}

@@ -79,9 +79,13 @@ export const useGoToPreviousGame = () =>
     useRecoilCallback(
         ({ set, snapshot }) =>
             () => {
-                const { gameIndex } = snapshot.getLoadable(positionStateSelector).getValue();
+                const { gameIndex, positionIndex } = snapshot.getLoadable(positionStateSelector).getValue();
                 const numGames = snapshot.getLoadable(numGamesSelector).getValue();
-                const newPosition = { gameIndex: getPreviousGameIndex(gameIndex, numGames), positionIndex: 0 };
+                // positionIndexが0のときは前の局の先頭へ、そうでなければ今の局の先頭へ
+                const newPosition = {
+                    gameIndex: positionIndex == 0 ? getPreviousGameIndex(gameIndex, numGames) : gameIndex,
+                    positionIndex: 0,
+                };
                 set(positionStateAtom, () => newPosition);
             },
         []
