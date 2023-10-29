@@ -172,7 +172,7 @@ export const createTileStateTransitions = (mJson: MJson): TileStateTransition[][
                         const tileId = event.t;
                         side.drawTile = tileId;
                         // ツモるアニメーションのために一つ前の局面にツモ牌を仕込んでおく
-                        const state = {
+                        const state: TileState = {
                             x: getDrawX(side),
                             y: regularTileY - drawGapY,
                             sideIndex,
@@ -303,11 +303,15 @@ export const createTileStateTransitions = (mJson: MJson): TileStateTransition[][
             const newStates = getAllTilesState(sides);
             for (let tileId = 0; tileId < 136; ++tileId) {
                 if (!isSameState(prevStates[tileId], newStates[tileId])) {
-                    transitions[transitions.length - 1].push({ kind: "forward", tileId, newState: newStates[tileId] });
+                    transitions[transitions.length - 1].push({
+                        kind: "forward",
+                        tileId,
+                        newState: { ...newStates[tileId] },
+                    });
                     transitions[transitions.length - 2].push({
                         kind: "backward",
                         tileId,
-                        newState: prevStates[tileId],
+                        newState: { ...prevStates[tileId] },
                     });
                 }
             }

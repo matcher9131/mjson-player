@@ -7,9 +7,6 @@ export type TileState = {
     readonly isFacedown?: boolean;
 };
 
-// atom[gameIndex][positionIndex][tileId]
-// export type TileStateAtomType = readonly (readonly Map<number, TileState>[])[];
-
 export const getDefaultTileState = (): TileState => ({
     x: 0,
     y: 0,

@@ -22,11 +22,11 @@ const ControlPanelContainer = () => {
         updateTileState();
     };
     const handlePreviousGameClicked = () => {
-        goToNextGame();
+        goToPreviousGame();
         updateTileState();
     };
     const handleNextGameClicked = () => {
-        goToPreviousGame();
+        goToNextGame();
         updateTileState();
     };
     return (

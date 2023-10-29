@@ -83,7 +83,7 @@ export const useGoToPreviousGame = () =>
                 const numGames = snapshot.getLoadable(numGamesSelector).getValue();
                 // positionIndexが0のときは前の局の先頭へ、そうでなければ今の局の先頭へ
                 const newPosition = {
-                    gameIndex: positionIndex == 0 ? getPreviousGameIndex(gameIndex, numGames) : gameIndex,
+                    gameIndex: positionIndex === 0 ? getPreviousGameIndex(gameIndex, numGames) : gameIndex,
                     positionIndex: 0,
                 };
                 set(positionStateAtom, () => newPosition);
